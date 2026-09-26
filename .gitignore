@@ -41,6 +41,7 @@ Thumbs.db
 logs/
 docs/client-brief.md
 README.md
+!backend/README.md
 backend/AGENTS.md
 AGENTS.md
 backend/.env.example
