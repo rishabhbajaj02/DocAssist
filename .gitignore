@@ -44,13 +44,11 @@ README.md
 backend/AGENTS.md
 AGENTS.md
 backend/.env.example
-backend/pyproject.toml
-backend/uv.lock
 data/download.py
 docs/architecture.md
 docs/guides/backend-setup.md
 docs/guides/frontend-setup.md
 docs/guides/supabase-setup.md
 frontend/.env.example
-frontend/.npmrc
 frontend/AGENTS.md
+docs/todos.md
