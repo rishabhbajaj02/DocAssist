@@ -16,21 +16,21 @@ def test_phase_one_tables_and_foreign_keys() -> None:
         "chat_messages",
         "message_citations",
     }
-    assert {str(fk.column) for fk in tables["document_chunks"].c.document_id.foreign_keys} == {
-        "source_documents.id"
-    }
+    assert {
+        str(fk.column) for fk in tables["document_chunks"].c.document_id.foreign_keys
+    } == {"source_documents.id"}
     assert {str(fk.column) for fk in tables["chat_threads"].c.user_id.foreign_keys} == {
         "users.id"
     }
-    assert {str(fk.column) for fk in tables["chat_messages"].c.thread_id.foreign_keys} == {
-        "chat_threads.id"
-    }
-    assert {str(fk.column) for fk in tables["message_citations"].c.message_id.foreign_keys} == {
-        "chat_messages.id"
-    }
-    assert {str(fk.column) for fk in tables["message_citations"].c.chunk_id.foreign_keys} == {
-        "document_chunks.id"
-    }
+    assert {
+        str(fk.column) for fk in tables["chat_messages"].c.thread_id.foreign_keys
+    } == {"chat_threads.id"}
+    assert {
+        str(fk.column) for fk in tables["message_citations"].c.message_id.foreign_keys
+    } == {"chat_messages.id"}
+    assert {
+        str(fk.column) for fk in tables["message_citations"].c.chunk_id.foreign_keys
+    } == {"document_chunks.id"}
 
 
 def test_chunks_have_vector_and_generated_search_column() -> None:
@@ -40,3 +40,27 @@ def test_chunks_have_vector_and_generated_search_column() -> None:
     assert chunks.c.embedding.type.dim == 1536
     assert isinstance(chunks.c.search_vector.type, TSVECTOR)
     assert isinstance(chunks.c.search_vector.computed, Computed)
+    indexes = {index.name: index for index in chunks.indexes}
+    assert (
+        indexes["ix_document_chunks_embedding_hnsw"].dialect_options["postgresql"][
+            "using"
+        ]
+        == "hnsw"
+    )
+    assert (
+        indexes["ix_document_chunks_search_vector_gin"].dialect_options["postgresql"][
+            "using"
+        ]
+        == "gin"
+    )
+
+
+def test_app_generated_ids_have_database_defaults() -> None:
+    for table_name in (
+        "source_documents",
+        "document_chunks",
+        "chat_threads",
+        "chat_messages",
+        "message_citations",
+    ):
+        assert Base.metadata.tables[table_name].c.id.server_default is not None

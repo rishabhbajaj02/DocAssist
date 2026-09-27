@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
@@ -8,6 +8,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -24,7 +25,9 @@ from app.database.models.base import Base
 class SourceDocument(Base):
     __tablename__ = "source_documents"
 
-    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
     ticker: Mapped[str] = mapped_column(String(16), index=True)
     company: Mapped[str] = mapped_column(String(255))
     filing_type: Mapped[str] = mapped_column(String(32))
@@ -40,11 +43,28 @@ class SourceDocument(Base):
 
 class DocumentChunk(Base):
     __tablename__ = "document_chunks"
-    __table_args__ = (UniqueConstraint("document_id", "chunk_index"),)
+    __table_args__ = (
+        UniqueConstraint("document_id", "chunk_index"),
+        Index(
+            "ix_document_chunks_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+        Index(
+            "ix_document_chunks_search_vector_gin",
+            "search_vector",
+            postgresql_using="gin",
+        ),
+    )
 
-    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
     document_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("source_documents.id", ondelete="CASCADE"), index=True
+        PGUUID(as_uuid=True),
+        ForeignKey("source_documents.id", ondelete="CASCADE"),
+        index=True,
     )
     chunk_index: Mapped[int] = mapped_column(Integer)
     content: Mapped[str] = mapped_column(Text)
